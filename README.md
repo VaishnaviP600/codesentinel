@@ -292,26 +292,7 @@ codesentinel/
 
 ---
 
-## 🎯 What This Demonstrates (For Interviews)
-
-| Concept | Where |
-|---|---|
-| Multi-agent design (LangGraph) | `agents/orchestrator.py` |
-| Local LLM inference (Ollama/LLaMA 3) | `agents/fix_agent.py` |
-| Event-driven architecture | GitHub webhook → Celery |
-| Async task processing | `tasks/scan_tasks.py` |
-| Real-time WebSocket streaming | `core/websocket_manager.py` |
-| GitHub App integration | `core/github_client.py` |
-| SAST pipeline chaining | `agents/sast_agent.py` |
-| JWT authentication | `core/auth.py` |
-| Docker Compose orchestration | `docker-compose.yml` |
-| n8n automation workflow | `n8n-workflows/` |
-| CI/CD pipeline | `.github/workflows/ci.yml` |
-| React + Recharts dashboard | `frontend/src/` |
-
----
-
-## 💡 Tips
+## Tips
 
 - **Ollama must be running** before starting Docker services (it runs on the host, not in Docker)
 - Use `docker compose logs -f celery_worker` to watch scan jobs in real time
@@ -320,6 +301,3 @@ codesentinel/
 
 ---
 
-## 📄 License
-
-MIT — built by Vaishnavi Pujala
