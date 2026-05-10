@@ -1,0 +1,158 @@
+{
+  "name": "CodeSentinel - Critical Finding Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "codesentinel-alert",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Scan Complete",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "notes": "Triggered by CodeSentinel backend when a scan finishes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.critical_count }}",
+              "operation": "largerEqual",
+              "value2": 1
+            }
+          ]
+        }
+      },
+      "id": "if-critical",
+      "name": "Has Critical Findings?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=🚨 *CRITICAL Security Alert* — CodeSentinel\n\n*Repo:* {{ $json.repo }}\n*PR:* #{{ $json.pr_number }} — {{ $json.pr_title }}\n*Critical Findings:* {{ $json.critical_count }}\n*High Findings:* {{ $json.high_count }}\n*Total:* {{ $json.total_findings }}\n\nScan ID: {{ $json.scan_id }}\n<http://localhost:3000|View Dashboard>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "slack-alert",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 200],
+      "notes": "Replace YOUR/SLACK/WEBHOOK with your actual Slack webhook URL"
+    },
+    {
+      "parameters": {
+        "fromEmail": "codesentinel@yourdomain.com",
+        "toEmail": "={{ $json.repo_owner_email || 'security@yourcompany.com' }}",
+        "subject": "=[CRITICAL] Security Issues Found — {{ $json.repo }} PR #{{ $json.pr_number }}",
+        "emailType": "html",
+        "message": "=<h2>🛡️ CodeSentinel Security Alert</h2><p>A scan of <strong>{{ $json.repo }}</strong> (PR #{{ $json.pr_number }}) found <strong style='color:red'>{{ $json.critical_count }} critical issue(s)</strong>.</p><h3>Summary</h3><ul><li>Critical: {{ $json.critical_count }}</li><li>High: {{ $json.high_count }}</li><li>Medium: {{ $json.medium_count }}</li><li>Total: {{ $json.total_findings }}</li></ul><p><a href='http://localhost:3000'>View Full Report on Dashboard</a></p>"
+      },
+      "id": "email-alert",
+      "name": "Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 340],
+      "notes": "Configure your SMTP credentials in n8n credentials"
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:8000/api/scans/{{ $json.scan_id }}/findings?severity=critical",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer YOUR_JWT_TOKEN" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-findings",
+      "name": "Fetch Critical Findings Detail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 270],
+      "notes": "Fetches detailed finding data from CodeSentinel API"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log to audit trail\nconst findings = $input.all();\nconst timestamp = new Date().toISOString();\nconsole.log(`[${timestamp}] Escalation triggered for scan ${$node['Webhook - Scan Complete'].json.scan_id}`);\nconsole.log(`Critical findings: ${findings.length}`);\nreturn findings;"
+      },
+      "id": "audit-log",
+      "name": "Audit Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 270]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"escalated\", \"scan_id\": {{ $node['Webhook - Scan Complete'].json.scan_id }} }"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 270]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"clean\", \"scan_id\": {{ $json.scan_id }} }"
+      },
+      "id": "no-critical",
+      "name": "No Action Needed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 480]
+    }
+  ],
+  "connections": {
+    "Webhook - Scan Complete": {
+      "main": [[{ "node": "Has Critical Findings?", "type": "main", "index": 0 }]]
+    },
+    "Has Critical Findings?": {
+      "main": [
+        [
+          { "node": "Slack Alert", "type": "main", "index": 0 },
+          { "node": "Email Alert", "type": "main", "index": 0 }
+        ],
+        [{ "node": "No Action Needed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Slack Alert": {
+      "main": [[{ "node": "Fetch Critical Findings Detail", "type": "main", "index": 0 }]]
+    },
+    "Email Alert": {
+      "main": [[{ "node": "Fetch Critical Findings Detail", "type": "main", "index": 0 }]]
+    },
+    "Fetch Critical Findings Detail": {
+      "main": [[{ "node": "Audit Log", "type": "main", "index": 0 }]]
+    },
+    "Audit Log": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
