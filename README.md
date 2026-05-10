@@ -98,7 +98,7 @@ Register an account and start scanning.
 5. Click View to see all findings with AI-generated explanations and fix suggestions
 
 ---
-
+```
 ## 📁 Project Structure
 
 codesentinel/
@@ -130,7 +130,7 @@ codesentinel/
 ├── .github/workflows/           - GitHub Actions CI pipeline
 ├── docker-compose.yml
 └── .env.example
-
+```
 ---
 
 ## 🔌 API Endpoints
