@@ -149,16 +149,3 @@ Full interactive API docs are available at http://localhost:8000/docs
 
 ---
 
-## 🛑 Stopping the Project
-
-docker compose down
-
-To also clear all stored data:
-
-docker compose down -v
-
----
-
-## 📄 License
-
-MIT License - Vaishnavi Pujala
